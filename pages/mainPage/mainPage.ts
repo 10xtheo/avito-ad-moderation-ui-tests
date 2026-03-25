@@ -5,8 +5,11 @@ import { parsePrice } from "../../helpers/parsePriceHeler";
 
 export class MainPage extends BasePage {
     protected pageName = "Главная страница";
+    readonly html: Locator
     readonly heading: Locator;
     readonly statsPageButton: Locator;
+
+    readonly themeSwitchButton: Locator;
 
     readonly filtersBlock: Locator;
     readonly categoryFilterSelect: Locator;
@@ -28,8 +31,12 @@ export class MainPage extends BasePage {
 
     constructor(page: Page) {
         super(page);
+        this.html = page.locator('html');
         this.heading = page.getByRole('heading', { name: 'Модерация объявлений' });
         this.statsPageButton = page.locator('a[href="/stats"]');
+
+        this.themeSwitchButton = page.locator('[class*="_themeToggle_"]');
+
         this.filtersBlock = page.getByRole('complementary').filter({ hasText: 'Фильтры' })
         this.categoryFilterSelect = this.filtersBlock.locator('label:has-text("Категория")').locator('..').locator('select');
 
@@ -96,19 +103,27 @@ export class MainPage extends BasePage {
     async assertAllCardsHaveCategory(expectedCategory: string) {
         const count = await this.adCards.count();
 
-        expect(count, 'На странице не найдены объявления').not.toBe(0);
+        await expect(this.adCards).not.toHaveCount(0);
 
         for (let i = 0; i < count; i++) {
             const card = this.adCards.nth(i);
-            const category = await this.cardCategory(card).textContent();
-            expect(category, `Категория карточки ${i + 1} не соответствует ожидаемой категории = ${expectedCategory}`).toBe(expectedCategory);
+            const category = this.cardCategory(card);
+            await expect(category, `Категория карточки ${i + 1} не соответствует ожидаемой категории = ${expectedCategory}`).toHaveText(expectedCategory);
         }
+    }
+
+    async clickThemeSwitchButton() {
+        await this.themeSwitchButton.click();
+    }
+
+    async switchTheme() {
+        await this.clickThemeSwitchButton();
     }
 
     async assertCardAreSortedByPriceFromHigh() {
         const count = await this.adCards.count();
 
-        expect(count, 'На странице не найдены объявления').not.toBe(0);
+        await expect(this.adCards, 'На странице не найдены объявления').not.toHaveCount(0);
 
         for (let i = 0; i < count - 1; i++) {
             const card = this.adCards.nth(i);
@@ -122,7 +137,7 @@ export class MainPage extends BasePage {
     async assertCardAreSortedByPriceFromLow() {
         const count = await this.adCards.count();
 
-        expect(count, 'На странице не найдены объявления').not.toBe(0);
+        await expect(this.adCards, 'На странице не найдены объявления').not.toHaveCount(0);
 
         for (let i = 0; i < count - 1; i++) {
             const card = this.adCards.nth(i);
@@ -134,36 +149,43 @@ export class MainPage extends BasePage {
     }
 
     async assertAllCardsHaveUrgentBadge() {
-        const count = await this.adCards.count();
-        
-        expect(count, 'На странице не найдены объявления').not.toBe(0);
+        await expect(this.adCards, 'На странице не найдены объявления').not.toHaveCount(0);
 
         const urgentBadgeCount = await this.adCardsUrgentBadges.count();
 
-        expect(urgentBadgeCount, 'На странице не найдено ни одного объявления с срочной меткой').not.toBe(0);
-        expect(count, 'Есть карточки без срочной метки').toEqual(urgentBadgeCount);
+        await expect(this.adCardsUrgentBadges, 'На странице не найдено ни одного объявления с срочной меткой').not.toHaveCount(0);
+        await expect(this.adCards, 'Есть карточки без срочной метки').toHaveCount(urgentBadgeCount);
     }
 
     async assertCardsBelongToPriceRangePositive(from: number | null, to: number | null) {
         const count = await this.adCards.count();
 
-        expect(count, `На странице найдены объявления при границах ${from !== null ? `от ${from}` : ''}${to !== null ? ` до ${to}` : ''}`).not.toBe(0);
+        await expect(this.adCards, `На странице найдены объявления при границах ${from !== null ? `от ${from}` : ''}${to !== null ? ` до ${to}` : ''}`).not.toHaveCount(0);
         for (let i = 0; i < count; i++) {
             const card = this.adCards.nth(i);
             const cardPrice = await parsePrice(await this.cardPrice(card).textContent());
             if (from != null) {     
-                expect(cardPrice, `Цена карточки ${i + 1} не соответствует ожидаемой цене`).toBeGreaterThanOrEqual(from+5000);
+                expect(cardPrice, `Цена карточки ${i + 1} не соответствует ожидаемой цене`).toBeGreaterThanOrEqual(from);
             }
             if (to != null) {
-                expect(cardPrice, `Цена карточки ${i + 1} не соответствует ожидаемой цене`).toBeLessThanOrEqual(to+5000);
+                expect(cardPrice, `Цена карточки ${i + 1} не соответствует ожидаемой цене`).toBeLessThanOrEqual(to);
             }
         }
     }
 
     async assertZeroCardsBelongToPriceRange(from: number | null, to: number | null) {
-        const count = await this.adCards.count();
-        expect(count, `На странице найдены объявления при границах ${from !== null ? `от ${from}` : ''}${to !== null ? ` до ${to}` : ''}`).toBe(0);
+        await expect(this.adCards, `На странице найдены объявления при границах ${from !== null ? `от ${from}` : ''}${to !== null ? ` до ${to}` : ''}`).toHaveCount(0);
     }
 
+    async assertNoMinPriceSet() {
+        expect(this.page.url(), 'Добавлены параметры поиска минимальной цены в url').not.toContain('minPrice=');
+    }
 
+    async assertThemeSet(theme: 'dark' | 'light') {
+        await expect(this.html, `Тема не ${theme}`).toHaveAttribute('data-theme', theme);
+    }
+
+    async assertThemeSwitchButtonSet(theme: 'Светлая' | 'Темная') {
+        await expect(this.themeSwitchButton, `Надпись на кнопке смены темы не ${theme}`).toContainText(theme);
+    }
 }
