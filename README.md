@@ -29,7 +29,7 @@ npx playwright test
 
 Запустить конкретный тестовый файл filterCategory.test.ts:
 ```bash
-npx playwright test tests/adsTests/filterTests/filterCategory.test.ts
+npx playwright test tests/desktop/adsTests/filterTests/filterCategory.test.ts
 ```
 
 Запустить конкретный тест по названию:
