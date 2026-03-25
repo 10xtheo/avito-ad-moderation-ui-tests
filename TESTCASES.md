@@ -26,7 +26,21 @@ STR:
 Expected:
 
 ID: TC-ADS-FILTER-PRICE-RANGE-3 
+Title: Фильтрация объявлений по Диапазону цен (Равные значения От и До)
+STR:
+Expected:
+
+ID: TC-ADS-FILTER-PRICE-RANGE-4
 Title: Фильтрация объявлений по Диапазону цен (Отрицательные значения)
+STR:
+Expected:
+
+ID: TC-ADS-FILTER-PRICE-RANGE-5
+Title: Фильтрация объявлений по Диапазону цен (От 0)
+STR:
+Expected:
+
+
 
 ??????????????
 

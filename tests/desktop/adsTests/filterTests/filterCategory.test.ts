@@ -14,4 +14,5 @@ test("Фильтрация по категории", async ({ page }) => {
     //assert
     await mainPage.waitForOpen();
     await mainPage.assertAllCardsHaveCategory(CATEGORY);
+    // TODO: добавить в асерт проверку последней страницы в пагинации
 });

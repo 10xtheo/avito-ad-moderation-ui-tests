@@ -10,6 +10,11 @@ export class MainPage extends BasePage {
 
     readonly filtersBlock: Locator;
     readonly categoryFilterSelect: Locator;
+
+    readonly filtersPriceRangeGroup: Locator;
+    readonly priceRangeFromInput: Locator;
+    readonly priceRangeToInput: Locator;
+
     readonly adCards: Locator;
     readonly adCardsUrgentBadges: Locator;
     readonly cardCategory: (card: Locator) => Locator
@@ -27,6 +32,11 @@ export class MainPage extends BasePage {
         this.statsPageButton = page.locator('a[href="/stats"]');
         this.filtersBlock = page.getByRole('complementary').filter({ hasText: 'Фильтры' })
         this.categoryFilterSelect = this.filtersBlock.locator('label:has-text("Категория")').locator('..').locator('select');
+
+        this.filtersPriceRangeGroup = this.filtersBlock.locator('div[class*="_filters__group_"]').filter({ has: page.locator('label', { hasText: 'Диапазон цен (₽)' }) });
+        this.priceRangeFromInput = this.filtersPriceRangeGroup.getByPlaceholder('От');;
+        this.priceRangeToInput = this.filtersPriceRangeGroup.getByPlaceholder('До');;
+
         this.adCards = page.locator('div[class^="_card_"]:not([class*="__"])');
         this.cardCategory = (card) => card.locator('[class*="_card__category_"]');
         this.cardPrice = (card) => card.locator('[class*="_card__price_"]');
@@ -65,10 +75,15 @@ export class MainPage extends BasePage {
     async checkUrgentToggle() {
         await this.urgentToggle.check();
     }
-
-    // async uncheckUrgentToggle() {
-    //     await this.urgentToggle.uncheck();
-    // }
+    
+    async fillPriceRange(from: string, to: string) {
+        if (from) {
+            await this.priceRangeFromInput.fill(from);
+        }
+        if (to) {
+            await this.priceRangeToInput.fill(to);
+        }
+    }
 
     async clickStatsPageButton() {
         await this.statsPageButton.click();
@@ -129,11 +144,26 @@ export class MainPage extends BasePage {
         expect(count, 'Есть карточки без срочной метки').toEqual(urgentBadgeCount);
     }
 
-    // async assertZeroCardsHaveUrgentBadge() {
-    //     const count = await this.adCards.count();
-    //     const urgentBadgeCount = await this.adCardsUrgentBadges.count();
-    //     expect(count, 'На странице не найдены объявления').not.toBe(0);
+    async assertCardsBelongToPriceRangePositive(from: number | null, to: number | null) {
+        const count = await this.adCards.count();
 
-    //     expect(urgentBadgeCount, 'На странице есть объявления с срочной меткой').toBe(0);
-    // }
+        expect(count, `На странице найдены объявления при границах ${from !== null ? `от ${from}` : ''}${to !== null ? ` до ${to}` : ''}`).not.toBe(0);
+        for (let i = 0; i < count; i++) {
+            const card = this.adCards.nth(i);
+            const cardPrice = await parsePrice(await this.cardPrice(card).textContent());
+            if (from != null) {     
+                expect(cardPrice, `Цена карточки ${i + 1} не соответствует ожидаемой цене`).toBeGreaterThanOrEqual(from+5000);
+            }
+            if (to != null) {
+                expect(cardPrice, `Цена карточки ${i + 1} не соответствует ожидаемой цене`).toBeLessThanOrEqual(to+5000);
+            }
+        }
+    }
+
+    async assertZeroCardsBelongToPriceRange(from: number | null, to: number | null) {
+        const count = await this.adCards.count();
+        expect(count, `На странице найдены объявления при границах ${from !== null ? `от ${from}` : ''}${to !== null ? ` до ${to}` : ''}`).toBe(0);
+    }
+
+
 }

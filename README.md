@@ -34,7 +34,7 @@ npx playwright test tests/adsTests/filterTests/filterCategory.test.ts
 
 Запустить конкретный тест по названию:
 ```bash
-npx playwright test -g "Открытие главной страницы"
+npx playwright test -g "Фильтрация по категории"
 ```
 
 Открыть отчет по тестам:

@@ -1,7 +1,9 @@
 import { Locator, Page, expect } from "@playwright/test";
 import {BasePage} from "../basePage";
 
-const WAIT_TIME = 3000;
+const UPDATE_TIMER_TIME = '5:00';
+const FREEZE_DATE = '2024-02-02T08:00:00';
+
 
 export class StatsPage extends BasePage {
     protected pageName = "Статистика модератора";
@@ -9,7 +11,7 @@ export class StatsPage extends BasePage {
 
     readonly timerRefreshButton: Locator;
     readonly timerPauseButton: Locator;
-    // readonly timerResumeButton: Locator;
+    readonly timerResumeButton: Locator;
     readonly disabledTimerLabel: Locator;
     readonly timerValue: Locator;
 
@@ -19,7 +21,7 @@ export class StatsPage extends BasePage {
 
         this.timerRefreshButton = page.getByRole('button', { name: 'Обновить сейчас' });
         this.timerPauseButton = page.getByRole('button', { name: 'Отключить автообновление' });
-        // this.timerResumeButton = page.getByRole('button', { name: 'Продолжить' });
+        this.timerResumeButton = page.getByRole('button', { name: 'Включить автообновление' });
         this.disabledTimerLabel = page.locator('[class*="_disabled_"]');
         this.timerValue = page.locator('[class*="_timeValue_"]');
     }
@@ -33,12 +35,29 @@ export class StatsPage extends BasePage {
         await this.waitForOpen();
     }
 
+    async freezeTime() {
+        await this.page.clock.install({ time: new Date(FREEZE_DATE) });
+        await this.page.clock.pauseAt(new Date(FREEZE_DATE));
+    }
+
+    async fastForwardTime(time: string) {
+        await this.page.clock.runFor(time);
+    }
+
     async clickTimerRefreshButton() {
         await this.timerRefreshButton.click();
     }
 
     async refreshTimer() {
         await this.clickTimerRefreshButton();
+    }
+
+    async clickTimerResumeButton() {
+        await this.timerResumeButton.click();
+    }
+
+    async resumeTimer() {
+        await this.clickTimerResumeButton();
     }
 
     async clickTimerPauseButton() {
@@ -58,6 +77,10 @@ export class StatsPage extends BasePage {
     }
 
     async assertTimerRefreshed() {
-        await expect(this.timerValue, "Некорректное значение таймера").toHaveText('4:57'); // TODO: fix
+        await expect(this.timerValue, "Некорректное значение таймера").toHaveText(UPDATE_TIMER_TIME);
+    }
+
+    async assertTimerResumed() {
+        await expect(this.timerValue, "Таймер не возобновлен (не отображается значение таймера)").toBeVisible( { timeout: 1000 } );
     }
 }
